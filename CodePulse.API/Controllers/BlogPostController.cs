@@ -250,5 +250,39 @@ namespace CodePulse.API.Controllers
             return NoContent();
 
         }
+
+        public async Task<IActionResult> GetBlogPostsByCategory([FromRoute] Guid categoryId)
+        {
+            var category = await categoryRepository.GetCategoryById(categoryId);
+            if (category == null)
+            {
+                return NotFound();
+            }
+            var blogPosts = category.BlogPosts;
+            //Map Domain to DTO
+            var response = new List<BlogPostDTO>();
+            foreach (var blogPost in blogPosts)
+            {
+                response.Add(new BlogPostDTO
+                {
+                    Id = blogPost.Id,
+                    Title = blogPost.Title,
+                    ShortDescription = blogPost.ShortDescription,
+                    Content = blogPost.Content,
+                    FeaturedImageURL = blogPost.FeaturedImageURL,
+                    URLHandle = blogPost.URLHandle,
+                    PublishedDate = blogPost.PublishedDate,
+                    Author = blogPost.Author,
+                    IsVisible = blogPost.IsVisible,
+                    Categories = blogPost.Categories.Select(c => new CategoryDTO
+                    {
+                        Id = c.Id,
+                        Name = c.Name,
+                        UrlHandle = c.UrlHandle,
+                    }).ToList()
+                });
+            }
+            return Ok(response);
+        }
     }
 }
