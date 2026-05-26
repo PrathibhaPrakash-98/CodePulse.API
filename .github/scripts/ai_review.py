@@ -33,7 +33,15 @@ response = requests.post(
     json={"contents": [{"parts": [{"text": prompt}]}]}
 )
 
-review_body = response.json()["candidates"][0]["content"]["parts"][0]["text"]
+response_json = response.json()
+print("Gemini API Response:", response_json)  # ← this will show the actual error
+
+# Check for errors
+if "candidates" not in response_json:
+    error_msg = response_json.get("error", {}).get("message", "Unknown Gemini API error")
+    raise Exception(f"Gemini API Error: {error_msg}")
+
+review_body = response_json["candidates"][0]["content"]["parts"][0]["text"]
 
 # 4. Post comment on PR
 requests.post(
