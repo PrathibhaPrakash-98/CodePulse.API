@@ -1,7 +1,7 @@
 import os, requests
 
 GITHUB_TOKEN = os.environ["GITHUB_TOKEN"]
-GEMINI_API_KEY = os.environ["GEMINI_API_KEY"]
+GROQ_API_KEY = os.environ["GROQ_API_KEY"]
 REPO = os.environ["REPO"]
 PR_NUMBER = os.environ["PR_NUMBER"]
 
@@ -16,7 +16,7 @@ diff = requests.get(
 with open("CodePulse.API/docs/coding-standards.md") as f:
     standards = f.read()
 
-# 3. Call Gemini (FREE)
+# 3. Call Groq (FREE)
 prompt = f"""You are a .NET code reviewer. Review the PR diff below strictly against 
 our coding standards. Flag violations with file name, line number, and explanation.
 
@@ -29,19 +29,25 @@ our coding standards. Flag violations with file name, line number, and explanati
 Provide a structured review."""
 
 response = requests.post(
-   f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}",
-    json={"contents": [{"parts": [{"text": prompt}]}]}
+    "https://api.groq.com/openai/v1/chat/completions",
+    headers={
+        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Content-Type": "application/json"
+    },
+    json={
+        "model": "llama-3.3-70b-versatile",  # free model
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": 2000
+    }
 )
 
 response_json = response.json()
-print("Gemini API Response:", response_json)  # ← this will show the actual error
+print("Groq Response:", response_json)
 
-# Check for errors
-if "candidates" not in response_json:
-    error_msg = response_json.get("error", {}).get("message", "Unknown Gemini API error")
-    raise Exception(f"Gemini API Error: {error_msg}")
+if "choices" not in response_json:
+    raise Exception(f"Groq API Error: {response_json}")
 
-review_body = response_json["candidates"][0]["content"]["parts"][0]["text"]
+review_body = response_json["choices"][0]["message"]["content"]
 
 # 4. Post comment on PR
 requests.post(
